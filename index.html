@@ -306,18 +306,15 @@ window.setSyncStatus = setSyncStatus;
 // Écoute les modifications distantes en temps réel
 onValue(STATE_REF, (snapshot) => {
   const distant = snapshot.val();
-  if(distant){
-    // Mise à jour uniquement si les données distantes sont différentes
-    if(!window._fbReady || JSON.stringify(distant) !== JSON.stringify(window.state)){
-      window.state = distant;
-      if(!window.state.free) window.state.free = {};
-      window._fbReady = true;
-      if(typeof window.render === "function") window.render();
-      setSyncStatus("ok");
-    }
+  if(distant && distant.tasks){
+    window.state = distant;
+    if(!window.state.free) window.state.free = {};
+    window._fbReady = true;
+    if(typeof window.render === "function") window.render();
+    setSyncStatus("ok");
   } else {
     // Aucune donnée dans Firebase — envoi des données locales par défaut
-    if(window.state){
+    if(window.state && window.state.tasks){
       set(STATE_REF, window.state);
     }
     window._fbReady = true;
@@ -492,8 +489,14 @@ function allCountDone(){
   return{tot,dn};
 }
 
-function toggle(id){window.state.done[id]=!window.state.done[id];window.saveState();render();}
-function toggleJ(id,j){const k=id+"_j"+j;window.state.done[k]=!window.state.done[k];window.saveState();render();}
+function toggle(id){
+  if(!window.state||!window.state.tasks) return;
+  window.state.done[id]=!window.state.done[id];window.saveState();render();
+}
+function toggleJ(id,j){
+  if(!window.state||!window.state.tasks) return;
+  const k=id+"_j"+j;window.state.done[k]=!window.state.done[k];window.saveState();render();
+}
 
 function deleteTask(day,si,id,name){
   window._pendingDel={day,si,id};
@@ -766,6 +769,7 @@ function openDetail(idx){
 function closeDetail(){document.getElementById("detail-panel").classList.remove("open");}
 
 window.render = function(){
+  if(!window.state || !window.state.tasks) return;
   document.getElementById("week-pill").textContent=weekLabel();
   renderStats();
   renderGrid();
