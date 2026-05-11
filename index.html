@@ -428,10 +428,24 @@ function toggle(id){window.ST.done[id]=!window.ST.done[id];window.fbSave();rende
 function toggleJ(id,j){const k=id+"_j"+j;window.ST.done[k]=!window.ST.done[k];window.fbSave();renderPlanning();}
 function toggleFree(id){window.ST.done[id]=!window.ST.done[id];window.fbSave();renderPlanning();}
 
-function setOp(day,op){
-  if(!window.ST.operateurs)window.ST.operateurs={};
-  window.ST.operateurs[day]=(window.ST.operateurs[day]===op)?null:op;
-  window.fbSave();renderPlanning();
+function setOp(day, op){
+  if(!window.ST.operateurs) window.ST.operateurs={};
+  if(day === "vendredi"){
+    // Multi-sélection max 2
+    let sel = window.ST.operateurs[day];
+    sel = Array.isArray(sel) ? sel : (sel ? [sel] : []);
+    if(sel.includes(op)){
+      sel = sel.filter(s=>s!==op); // désélectionne
+    } else {
+      if(sel.length < 2) sel = [...sel, op]; // ajoute si < 2
+      else sel = [sel[1], op]; // remplace le plus ancien si déjà 2
+    }
+    window.ST.operateurs[day] = sel.length ? sel : null;
+  } else {
+    // Sélection simple pour les autres jours
+    window.ST.operateurs[day] = window.ST.operateurs[day]===op ? null : op;
+  }
+  window.fbSave(); renderPlanning();
 }
 
 function delTask(day,si,id,name){
@@ -515,13 +529,26 @@ function showPage(p){
 }
 
 function opBar(day){
-  const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
-  const cls=op||"none";
-  const label=op?"✦ "+OP_LABEL[op]:"Qui fait la météo ?";
-  return`<div class="op-bar ${cls}">
-    <span class="op-who ${cls}">${label}</span>
+  const isVen = day === "vendredi";
+  const op = (window.ST.operateurs && window.ST.operateurs[day]) || null;
+  // vendredi : op peut être un tableau de 2 noms max
+  const selected = isVen
+    ? (Array.isArray(op) ? op : (op ? [op] : []))
+    : (op ? [op] : []);
+
+  let label = "Qui fait la météo ?";
+  if(selected.length === 1) label = "✦ " + OP_LABEL[selected[0]];
+  if(selected.length === 2) label = "✦ " + OP_LABEL[selected[0]] + " & " + OP_LABEL[selected[1]];
+
+  const cls = selected.length === 1 ? selected[0] : selected.length === 2 ? "multi" : "none";
+  const barStyle = selected.length === 2
+    ? `background:linear-gradient(135deg,${selected[0]==='chris'?'#EFF6FF':selected[0]==='camille'?'#FDF2F8':'#ECFDF5'} 50%,${selected[1]==='chris'?'#EFF6FF':selected[1]==='camille'?'#FDF2F8':'#ECFDF5'} 50%);border-color:var(--border-md)`
+    : "";
+
+  return`<div class="op-bar ${cls}" style="${barStyle}">
+    <span class="op-who ${selected.length===1?selected[0]:selected.length===2?'':'none'}">${label}${isVen?'<span style="font-size:10px;opacity:.6;margin-left:4px">(max 2)</span>':''}</span>
     <div class="op-btns">
-      ${OPERATEURS.map(o=>`<button class="op-btn ${o}${op===o?" active":""}" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
+      ${OPERATEURS.map(o=>`<button class="op-btn ${o}${selected.includes(o)?" active":""}" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
     </div>
   </div>`;
 }
@@ -572,11 +599,22 @@ function renderGrid(){
     const pct=t?Math.round(d/t*100):0;
     const isToday=DAYS.indexOf(day)===TODAY;
     const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
-    const headCls=op?" op-"+op:"";
+    const selArr = day==="vendredi"
+      ? (Array.isArray(op)?op:(op?[op]:[]))
+      : (op?[op]:[]);
+    const headCls = selArr.length===1 ? " op-"+selArr[0] : "";
+    const headStyle = selArr.length===2
+      ? `background:linear-gradient(135deg,${selArr[0]==='chris'?'#DBEAFE':selArr[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${selArr[1]==='chris'?'#DBEAFE':selArr[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-bottom-color:var(--border-md)`
+      : "";
+    const opNameHtml = selArr.length===1
+      ? `<span style="font-size:13px;font-weight:400;color:${selArr[0]==='chris'?'#1D4ED8':selArr[0]==='camille'?'#BE185D':'#065F46'}">— ${OP_LABEL[selArr[0]]}</span>`
+      : selArr.length===2
+      ? `<span style="font-size:13px;font-weight:400;color:var(--text2)">— ${OP_LABEL[selArr[0]]} & ${OP_LABEL[selArr[1]]}</span>`
+      : "";
     const secs=window.ST.tasks[day].map((sec,si)=>{
       const isMeteo=sec.sec==="meteo";
       const meta=SM[sec.sec]||{label:sec.sec,icon:"ti-list",cls:"si-meteo"};
-      const iconCls=isMeteo&&op?"si-"+op:meta.cls;
+      const iconCls=isMeteo&&selArr.length===1?"si-"+selArr[0]:meta.cls;
       const hasQ=sec.tasks.some(tk=>tk.b==="a"||tk.m);
       const hasH=sec.tasks.some(tk=>tk.b==="h");
       let rows="";
@@ -592,6 +630,13 @@ function renderGrid(){
         <button class="add-btn" onclick="addTask('${day}',${si})"><i class="ti ti-plus"></i></button>
       </div>`;
     }).join("");
+    return`<div class="day-col">
+      <div class="day-head${headCls}" style="${headStyle}">
+        <div class="day-name">${DLF[day]}${isToday?'<span class="today-dot"></span>':''}${opNameHtml}</div>
+        <div class="day-prog"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-txt">${d}/${t}</span></div>
+      </div>
+      <div class="day-body">${secs}${freeZone(day)}</div>
+    </div>`;
     return`<div class="day-col">
       <div class="day-head${headCls}">
         <div class="day-name">${DLF[day]}${isToday?'<span class="today-dot"></span>':''}${op?`<span style="font-size:13px;font-weight:400;color:${op==='chris'?'#1D4ED8':op==='camille'?'#BE185D':'#065F46'}">— ${OP_LABEL[op]}</span>`:''}
