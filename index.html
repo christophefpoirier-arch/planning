@@ -62,7 +62,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .week-grid{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:10px;min-width:950px}
 .week-grid.single{grid-template-columns:1fr;min-width:0;max-width:600px;margin:0 auto}
 .day-col{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
-.day-head{padding:10px 12px 8px;border-bottom:0.5px solid var(--border);background:var(--surface2)}
+.day-head{padding:10px 12px 8px;border-bottom:0.5px solid var(--border);background:var(--surface2);transition:background .2s,border-color .2s}
+.day-head.op-chris{background:linear-gradient(135deg,#DBEAFE,#EFF6FF);border-bottom-color:#93C5FD}
+.day-head.op-camille{background:linear-gradient(135deg,#FCE7F3,#FDF2F8);border-bottom-color:#F9A8D4}
+.day-head.op-thierry{background:linear-gradient(135deg,#D1FAE5,#ECFDF5);border-bottom-color:#6EE7B7}
 .day-name{font-size:16px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px}
 .today-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
 .day-prog{display:flex;align-items:center;gap:6px;margin-top:6px}
@@ -75,6 +78,30 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .sec-icon{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sec-icon i{font-size:11px;color:#fff}
 .si-meteo{background:#3B82F6}.si-couv{background:#F59E0B}.si-horo{background:#8B5CF6}.si-pas{background:#EC4899}
+/* Couleurs opérateurs météo */
+.op-chris{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
+.op-camille{background:linear-gradient(135deg,#BE185D,#EC4899)}
+.op-thierry{background:linear-gradient(135deg,#065F46,#10B981)}
+.op-none{background:#3B82F6}
+/* Bandeau coloré section météo selon opérateur */
+.meteo-op-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:var(--rs);margin-bottom:4px;gap:6px}
+.op-chris .meteo-op-bar,.meteo-op-bar.chris{background:linear-gradient(135deg,#DBEAFE,#EFF6FF);border:1px solid #3B82F6}
+.meteo-op-bar.camille{background:linear-gradient(135deg,#FCE7F3,#FDF2F8);border:1px solid #EC4899}
+.meteo-op-bar.thierry{background:linear-gradient(135deg,#D1FAE5,#ECFDF5);border:1px solid #10B981}
+.meteo-op-bar.none{background:var(--surface2);border:1px solid var(--border)}
+.op-label{font-size:12px;font-weight:500}
+.op-label.chris{color:#1D4ED8}.op-label.camille{color:#BE185D}.op-label.thierry{color:#065F46}.op-label.none{color:var(--text3)}
+.op-btns{display:flex;gap:4px}
+.op-btn{font-size:11px;font-family:'DM Sans',sans-serif;padding:3px 10px;border-radius:var(--rp);border:1px solid transparent;cursor:pointer;transition:all .15s;font-weight:500}
+.op-btn.chris{background:#DBEAFE;color:#1D4ED8;border-color:#93C5FD}
+.op-btn.camille{background:#FCE7F3;color:#BE185D;border-color:#F9A8D4}
+.op-btn.thierry{background:#D1FAE5;color:#065F46;border-color:#6EE7B7}
+.op-btn.active{opacity:1;transform:scale(1.05);box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.op-btn:not(.active){opacity:0.55}
+/* Couleur icône météo selon opérateur */
+.sec-icon.chris-icon{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
+.sec-icon.camille-icon{background:linear-gradient(135deg,#BE185D,#EC4899)}
+.sec-icon.thierry-icon{background:linear-gradient(135deg,#065F46,#10B981)}
 .sec-name{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
 .sub-label{font-size:12px;color:var(--text3);padding:4px 4px 2px;font-style:italic}
 .task-row{display:flex;align-items:flex-start;gap:7px;padding:6px;border-radius:var(--rs);cursor:pointer;margin-bottom:1px;transition:background .1s;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -372,6 +399,7 @@ try{
 }
 if(!window.ST.done)window.ST.done={};
 if(!window.ST.free)window.ST.free={};
+if(!window.ST.operateurs)window.ST.operateurs={}; // {lundi:"chris", mardi:"camille", ...}
 
 try{const h=localStorage.getItem("planning_hist_v4");window.HIST=h?JSON.parse(h):[];}
 catch(e){window.HIST=[];}
@@ -463,7 +491,28 @@ function archiveAndReset(){
   alert("Semaine "+snap.label+" archivée — "+snap.pct+"% !");
 }
 
-function setView(v){
+function setOperateur(day, op){
+  if(!window.ST.operateurs)window.ST.operateurs={};
+  window.ST.operateurs[day] = window.ST.operateurs[day]===op ? null : op;
+  window.fbSave();
+  renderPlanning();
+}
+
+const OP_LABELS={chris:"Chris",camille:"Camille",thierry:"Thierry"};
+
+function meteoOpBar(day){
+  const op = (window.ST.operateurs&&window.ST.operateurs[day])||null;
+  const cls = op||"none";
+  const label = op ? OP_LABELS[op] : "Qui fait la météo ?";
+  return`<div class="meteo-op-bar ${cls}">
+    <span class="op-label ${cls}">${op?"✦ "+label:"☁ "+label}</span>
+    <div class="op-btns">
+      <button class="op-btn chris${op==="chris"?" active":""}" onclick="event.stopPropagation();setOperateur('${day}','chris')">Chris</button>
+      <button class="op-btn camille${op==="camille"?" active":""}" onclick="event.stopPropagation();setOperateur('${day}','camille')">Camille</button>
+      <button class="op-btn thierry${op==="thierry"?" active":""}" onclick="event.stopPropagation();setOperateur('${day}','thierry')">Thierry</button>
+    </div>
+  </div>`;
+}
   viewMode=v;
   document.getElementById("vt-semaine").classList.toggle("active",v==="semaine");
   document.getElementById("vt-jour").classList.toggle("active",v==="jour");
@@ -533,6 +582,9 @@ function renderGrid(){
     const isToday=DAYS.indexOf(day)===TODAY;
     const secs=window.ST.tasks[day].map((sec,si)=>{
       const meta=SM[sec.sec]||{label:sec.sec,icon:"ti-list",cls:"si-meteo"};
+      const isMeteo = sec.sec==="meteo";
+      const op = isMeteo ? ((window.ST.operateurs&&window.ST.operateurs[day])||null) : null;
+      const iconCls = isMeteo && op ? op+"-icon" : meta.cls;
       const hasQ=sec.tasks.some(tk=>tk.b==="a"||tk.m);
       const hasH=sec.tasks.some(tk=>tk.b==="h");
       let rows="";
@@ -542,7 +594,8 @@ function renderGrid(){
       } else {
         rows=sec.tasks.map(tk=>taskRow(tk,day,si)).join("");
       }
-      return`<div class="sec-header"><div class="sec-icon ${meta.cls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span></div>
+      return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span></div>
+      ${isMeteo ? meteoOpBar(day) : ""}
       ${rows}
       <div class="add-row">
         <input id="inp-${day}-${si}" placeholder="Ajouter…" onkeydown="if(event.key==='Enter')addTask('${day}',${si})">
@@ -550,8 +603,10 @@ function renderGrid(){
         <button class="add-btn" onclick="addTask('${day}',${si})"><i class="ti ti-plus"></i></button>
       </div>`;
     }).join("");
+    const opDay = (window.ST.operateurs&&window.ST.operateurs[day])||null;
+    const opHeadCls = opDay ? " op-"+opDay : "";
     return`<div class="day-col">
-      <div class="day-head">
+      <div class="day-head${opHeadCls}">
         <div class="day-name">${DLF[day]}${isToday?'<span class="today-dot"></span>':''}</div>
         <div class="day-prog"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-txt">${d}/${t}</span></div>
       </div>
