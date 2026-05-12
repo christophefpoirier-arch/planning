@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>Planning Hebdomadaire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -18,18 +19,9 @@
   --text:#1a1a18;--text2:#5F5E5A;--text3:#888780;
   --r:12px;--rs:8px;--rp:99px;
 }
-@media(prefers-color-scheme:dark){:root{
-  --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2b;
-  --border:rgba(255,255,255,0.10);--border-md:rgba(255,255,255,0.18);
-  --text:#F1EFE8;--text2:#B4B2A9;--text3:#888780;
-  --green-l:#04342C;--green-d:#9FE1CB;
-  --amber-l:#412402;--amber:#EF9F27;--amber-d:#FAC775;
-  --blue-l:#042C53;--blue:#85B7EB;--blue-d:#B5D4F4;
-  --red-l:#501313;--red:#F09595;
-}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+html{font-size:16px;background:#F7F6F3}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;color-scheme:light}
 .nav{background:var(--surface);border-bottom:0.5px solid var(--border);padding:0 20px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;flex-wrap:wrap}
 .nav-tab{font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;padding:14px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s;white-space:nowrap}
 .nav-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:500}
