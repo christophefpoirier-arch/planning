@@ -430,21 +430,16 @@ function toggleFree(id){window.ST.done[id]=!window.ST.done[id];window.fbSave();r
 
 function setOp(day, op){
   if(!window.ST.operateurs) window.ST.operateurs={};
-  if(day === "vendredi"){
-    // Multi-sélection max 2
-    let sel = window.ST.operateurs[day];
-    sel = Array.isArray(sel) ? sel : (sel ? [sel] : []);
-    if(sel.includes(op)){
-      sel = sel.filter(s=>s!==op); // désélectionne
-    } else {
-      if(sel.length < 2) sel = [...sel, op]; // ajoute si < 2
-      else sel = [sel[1], op]; // remplace le plus ancien si déjà 2
-    }
-    window.ST.operateurs[day] = sel.length ? sel : null;
+  // Multi-sélection max 2 pour tous les jours
+  let sel = window.ST.operateurs[day];
+  sel = Array.isArray(sel) ? sel : (sel ? [sel] : []);
+  if(sel.includes(op)){
+    sel = sel.filter(s=>s!==op);
   } else {
-    // Sélection simple pour les autres jours
-    window.ST.operateurs[day] = window.ST.operateurs[day]===op ? null : op;
+    if(sel.length < 2) sel = [...sel, op];
+    else sel = [sel[1], op];
   }
+  window.ST.operateurs[day] = sel.length ? sel : null;
   window.fbSave(); renderPlanning();
 }
 
@@ -529,24 +524,17 @@ function showPage(p){
 }
 
 function opBar(day){
-  const isVen = day === "vendredi";
   const op = (window.ST.operateurs && window.ST.operateurs[day]) || null;
-  // vendredi : op peut être un tableau de 2 noms max
-  const selected = isVen
-    ? (Array.isArray(op) ? op : (op ? [op] : []))
-    : (op ? [op] : []);
-
+  const selected = Array.isArray(op) ? op : (op ? [op] : []);
   let label = "Qui fait la météo ?";
   if(selected.length === 1) label = "✦ " + OP_LABEL[selected[0]];
   if(selected.length === 2) label = "✦ " + OP_LABEL[selected[0]] + " & " + OP_LABEL[selected[1]];
-
-  const cls = selected.length === 1 ? selected[0] : selected.length === 2 ? "multi" : "none";
+  const cls = selected.length === 1 ? selected[0] : "none";
   const barStyle = selected.length === 2
-    ? `background:linear-gradient(135deg,${selected[0]==='chris'?'#EFF6FF':selected[0]==='camille'?'#FDF2F8':'#ECFDF5'} 50%,${selected[1]==='chris'?'#EFF6FF':selected[1]==='camille'?'#FDF2F8':'#ECFDF5'} 50%);border-color:var(--border-md)`
+    ? `background:linear-gradient(135deg,${selected[0]==='chris'?'#DBEAFE':selected[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${selected[1]==='chris'?'#DBEAFE':selected[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-color:var(--border-md)`
     : "";
-
   return`<div class="op-bar ${cls}" style="${barStyle}">
-    <span class="op-who ${selected.length===1?selected[0]:selected.length===2?'':'none'}">${label}${isVen?'<span style="font-size:10px;opacity:.6;margin-left:4px">(max 2)</span>':''}</span>
+    <span class="op-who ${selected.length===1?selected[0]:''}" style="${selected.length===2?'color:var(--text);font-weight:500':''}">${label}<span style="font-size:10px;opacity:.5;margin-left:4px">(max 2)</span></span>
     <div class="op-btns">
       ${OPERATEURS.map(o=>`<button class="op-btn ${o}${selected.includes(o)?" active":""}" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
     </div>
@@ -591,30 +579,49 @@ function taskRow(t,day,si){
   </div>`;
 }
 
+function setOp(day,op){
+  if(!window.ST.operateurs)window.ST.operateurs={};
+  let sel=window.ST.operateurs[day];
+  sel=Array.isArray(sel)?sel:(sel?[sel]:[]);
+  if(sel.includes(op)){sel=sel.filter(s=>s!==op);}
+  else{if(sel.length<2)sel=[...sel,op];else sel=[sel[1],op];}
+  window.ST.operateurs[day]=sel.length?sel:null;
+  window.fbSave();renderPlanning();
+}
+
 function renderGrid(){
   if(!window.ST||!window.ST.tasks)return;
   const days=viewMode==="jour"?[activeDay]:DAYS;
+  const OP_BG={chris:'#1D4ED8',camille:'#9D174D',thierry:'#065F46'};
+  const OP_LIGHT={chris:'#DBEAFE',camille:'#FCE7F3',thierry:'#D1FAE5'};
+  const OP_DARK_TXT={chris:'#1e3a8a',camille:'#831843',thierry:'#064e3b'};
   document.getElementById("week-grid").innerHTML=days.map(day=>{
     const{t,d}=cntDay(day);
     const pct=t?Math.round(d/t*100):0;
     const isToday=DAYS.indexOf(day)===TODAY;
     const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
-    const selArr = day==="vendredi"
-      ? (Array.isArray(op)?op:(op?[op]:[]))
-      : (op?[op]:[]);
-    const headCls = selArr.length===1 ? " op-"+selArr[0] : "";
-    const headStyle = selArr.length===2
-      ? `background:linear-gradient(135deg,${selArr[0]==='chris'?'#DBEAFE':selArr[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${selArr[1]==='chris'?'#DBEAFE':selArr[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-bottom-color:var(--border-md)`
-      : "";
-    const opNameHtml = selArr.length===1
-      ? `<span style="font-size:13px;font-weight:400;color:${selArr[0]==='chris'?'#1D4ED8':selArr[0]==='camille'?'#BE185D':'#065F46'}">— ${OP_LABEL[selArr[0]]}</span>`
-      : selArr.length===2
-      ? `<span style="font-size:13px;font-weight:400;color:var(--text2)">— ${OP_LABEL[selArr[0]]} & ${OP_LABEL[selArr[1]]}</span>`
-      : "";
+    const sel=Array.isArray(op)?op:(op?[op]:[]);
+    // En-tête : aujourd'hui = fond sombre, sinon couleur opérateur
+    let headBg, headBorder, headTxtColor, progFillColor;
+    if(isToday){
+      headBg="#1a1a18"; headBorder="#1a1a18"; headTxtColor="#ffffff"; progFillColor="#ffffff";
+    } else if(sel.length===2){
+      headBg=`linear-gradient(90deg,${OP_LIGHT[sel[0]]} 50%,${OP_LIGHT[sel[1]]} 50%)`;
+      headBorder="#d1d5db"; headTxtColor="#111827"; progFillColor="var(--green)";
+    } else if(sel.length===1){
+      headBg=OP_LIGHT[sel[0]]; headBorder=OP_LIGHT[sel[0]]; headTxtColor=OP_DARK_TXT[sel[0]]; progFillColor=OP_BG[sel[0]];
+    } else {
+      headBg="var(--surface2)"; headBorder="var(--border)"; headTxtColor="var(--text)"; progFillColor="var(--green)";
+    }
+    // Pastilles noms opérateurs dans l'en-tête
+    let opPills="";
+    if(sel.length>0){
+      opPills=sel.map(o=>`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:${isToday?'rgba(255,255,255,0.2)':OP_BG[o]};color:${isToday?'#fff':'#fff'};white-space:nowrap;flex-shrink:0">${OP_LABEL[o]}</span>`).join("");
+    }
     const secs=window.ST.tasks[day].map((sec,si)=>{
       const isMeteo=sec.sec==="meteo";
       const meta=SM[sec.sec]||{label:sec.sec,icon:"ti-list",cls:"si-meteo"};
-      const iconCls=isMeteo&&selArr.length===1?"si-"+selArr[0]:meta.cls;
+      const iconCls=isMeteo&&sel.length===1?"si-"+sel[0]:meta.cls;
       const hasQ=sec.tasks.some(tk=>tk.b==="a"||tk.m);
       const hasH=sec.tasks.some(tk=>tk.b==="h");
       let rows="";
@@ -630,18 +637,17 @@ function renderGrid(){
         <button class="add-btn" onclick="addTask('${day}',${si})"><i class="ti ti-plus"></i></button>
       </div>`;
     }).join("");
-    return`<div class="day-col">
-      <div class="day-head${headCls}" style="${headStyle}">
-        <div class="day-name">${DLF[day]}${isToday?'<span class="today-dot"></span>':''}${opNameHtml}</div>
-        <div class="day-prog"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-txt">${d}/${t}</span></div>
-      </div>
-      <div class="day-body">${secs}${freeZone(day)}</div>
-    </div>`;
-    return`<div class="day-col">
-      <div class="day-head${headCls}">
-        <div class="day-name">${DLF[day]}${isToday?'<span class="today-dot"></span>':''}${op?`<span style="font-size:13px;font-weight:400;color:${op==='chris'?'#1D4ED8':op==='camille'?'#BE185D':'#065F46'}">— ${OP_LABEL[op]}</span>`:''}
+    return`<div class="day-col" style="${isToday?'box-shadow:0 0 0 2px #1a1a18':''}">
+      <div class="day-head" style="background:${headBg};border-bottom:1.5px solid ${headBorder}">
+        <div class="day-name" style="color:${headTxtColor};display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+          <span style="flex-shrink:0">${DLF[day]}</span>
+          ${isToday?`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.2);color:#fff;flex-shrink:0">Aujourd'hui</span>`:''}
+          ${opPills}
         </div>
-        <div class="day-prog"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-txt">${d}/${t}</span></div>
+        <div class="day-prog" style="margin-top:6px">
+          <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${progFillColor}"></div></div>
+          <span class="prog-txt" style="color:${isToday?'rgba(255,255,255,0.7)':'var(--text3)'}">${d}/${t}</span>
+        </div>
       </div>
       <div class="day-body">${secs}${freeZone(day)}</div>
     </div>`;
