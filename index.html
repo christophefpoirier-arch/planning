@@ -635,6 +635,7 @@ function renderGrid(){
           <span style="flex-shrink:0">${DLF[day]}</span>
           ${isToday?`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.2);color:#fff;flex-shrink:0">Aujourd'hui</span>`:''}
           ${opPills}
+          <span style="margin-left:auto;font-size:15px;font-weight:700;flex-shrink:0;color:${isToday?'#fff':pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}">${pct}%</span>
         </div>
         <div class="day-prog" style="margin-top:6px">
           <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${progFillColor}"></div></div>
