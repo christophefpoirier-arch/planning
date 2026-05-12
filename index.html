@@ -85,7 +85,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .sec-name{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
 .sub-label{font-size:12px;color:var(--text3);padding:4px 4px 2px;font-style:italic}
 /* OPERATEUR METEO */
-.op-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:var(--rs);margin-bottom:6px;gap:6px;border:1px solid var(--border);background:var(--surface2);transition:background .25s,border-color .25s}
+.op-bar{display:flex;align-items:center;flex-wrap:wrap;padding:6px 8px;border-radius:var(--rs);margin-bottom:6px;gap:6px;border:1px solid var(--border);background:var(--surface2);transition:background .25s,border-color .25s;min-width:0;overflow:hidden}
 .op-bar.chris{background:#EFF6FF;border-color:#93C5FD}
 .op-bar.camille{background:#FDF2F8;border-color:#F9A8D4}
 .op-bar.thierry{background:#ECFDF5;border-color:#6EE7B7}
@@ -524,19 +524,19 @@ function showPage(p){
 }
 
 function opBar(day){
-  const op = (window.ST.operateurs && window.ST.operateurs[day]) || null;
-  const selected = Array.isArray(op) ? op : (op ? [op] : []);
-  let label = "Qui fait la météo ?";
-  if(selected.length === 1) label = "✦ " + OP_LABEL[selected[0]];
-  if(selected.length === 2) label = "✦ " + OP_LABEL[selected[0]] + " & " + OP_LABEL[selected[1]];
-  const cls = selected.length === 1 ? selected[0] : "none";
-  const barStyle = selected.length === 2
-    ? `background:linear-gradient(135deg,${selected[0]==='chris'?'#DBEAFE':selected[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${selected[1]==='chris'?'#DBEAFE':selected[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-color:var(--border-md)`
-    : "";
-  return`<div class="op-bar ${cls}" style="${barStyle}">
-    <span class="op-who ${selected.length===1?selected[0]:''}" style="${selected.length===2?'color:var(--text);font-weight:500':''}">${label}<span style="font-size:10px;opacity:.5;margin-left:4px">(max 2)</span></span>
-    <div class="op-btns">
-      ${OPERATEURS.map(o=>`<button class="op-btn ${o}${selected.includes(o)?" active":""}" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
+  const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
+  const sel=Array.isArray(op)?op:(op?[op]:[]);
+  let label="Qui fait la météo ?";
+  if(sel.length===1)label="✦ "+OP_LABEL[sel[0]];
+  if(sel.length===2)label="✦ "+OP_LABEL[sel[0]]+" & "+OP_LABEL[sel[1]];
+  const cls=sel.length===1?sel[0]:"none";
+  const barStyle=sel.length===2
+    ?`background:linear-gradient(135deg,${sel[0]==='chris'?'#DBEAFE':sel[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${sel[1]==='chris'?'#DBEAFE':sel[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-color:var(--border-md)`
+    :"";
+  return`<div class="op-bar ${cls}" style="${barStyle};flex-wrap:wrap;gap:6px">
+    <span class="op-who ${sel.length===1?sel[0]:''}" style="${sel.length===2?'color:var(--text);font-weight:500':''}font-size:12px;flex-shrink:0">${label}</span>
+    <div class="op-btns" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:1;min-width:0">
+      ${OPERATEURS.map(o=>`<button class="op-btn ${o}${sel.includes(o)?" active":""}" style="flex-shrink:0;padding:4px 8px;font-size:11px" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
     </div>
   </div>`;
 }
