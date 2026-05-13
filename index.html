@@ -210,6 +210,40 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .wnav-note::placeholder{color:var(--text3)}
 
 .spin{animation:spin 1s linear infinite;display:inline-block}
+/* ÉQUIPE / CONGÉS */
+.equipe-wrap{padding:20px}
+.equipe-person{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.equipe-person-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:0.5px solid var(--border)}
+.equipe-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.av-chris{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
+.av-camille{background:linear-gradient(135deg,#BE185D,#EC4899)}
+.av-thierry{background:linear-gradient(135deg,#065F46,#10B981)}
+.equipe-person-name{font-size:16px;font-weight:600;color:var(--text)}
+.conge-list{padding:10px 16px}
+.conge-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.conge-item:last-child{border-bottom:none}
+.conge-dates{font-size:14px;color:var(--text);flex:1;font-family:'DM Mono',monospace}
+.conge-label{font-size:13px;color:var(--text3);flex:1}
+.conge-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px;display:flex;align-items:center}
+.conge-del:hover{color:var(--red);background:var(--red-l)}
+.conge-add-form{display:flex;gap:8px;padding:10px 16px 14px;flex-wrap:wrap;align-items:flex-end}
+.conge-add-form input[type=date]{font-size:13px;font-family:'DM Sans',sans-serif;border:0.5px solid var(--border-md);border-radius:var(--rs);padding:6px 10px;background:var(--surface2);color:var(--text);outline:none;cursor:pointer}
+.conge-add-form input[type=date]:focus{border-color:var(--green)}
+.conge-add-form input[type=text]{flex:1;min-width:120px;font-size:13px;font-family:'DM Sans',sans-serif;border:0.5px solid var(--border-md);border-radius:var(--rs);padding:6px 10px;background:var(--surface2);color:var(--text);outline:none}
+.conge-add-form input[type=text]:focus{border-color:var(--green)}
+.conge-add-btn{font-size:13px;font-family:'DM Sans',sans-serif;padding:6px 14px;border-radius:var(--rs);border:0.5px solid var(--green);background:var(--green-l);color:var(--green-d);cursor:pointer;white-space:nowrap}
+/* Calendrier 8 semaines */
+.cal-grid{display:grid;grid-template-columns:80px repeat(8,1fr);gap:0;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.cal-header{background:var(--surface2);padding:8px 6px;font-size:12px;font-weight:500;color:var(--text3);text-align:center;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border)}
+.cal-header:last-child{border-right:none}
+.cal-person-label{background:var(--surface2);padding:10px 8px;font-size:13px;font-weight:600;color:var(--text);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:6px}
+.cal-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);font-size:11px;min-height:36px;display:flex;align-items:center;justify-content:center}
+.cal-cell:last-child{border-right:none}
+.cal-absent{border-radius:4px;font-size:11px;font-weight:600;padding:3px 6px;white-space:nowrap}
+.cal-absent.chris{background:#DBEAFE;color:#1D4ED8}
+.cal-absent.camille{background:#FCE7F3;color:#BE185D}
+.cal-absent.thierry{background:#D1FAE5;color:#065F46}
+.cal-dispo{color:var(--green);font-size:14px}
 </style>
 </head>
 <body>
@@ -217,6 +251,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <nav class="nav">
   <button class="nav-tab active" id="tab-planning" onclick="showPage('planning')"><i class="ti ti-layout-columns"></i> Planning</button>
   <button class="nav-tab" id="tab-historique" onclick="showPage('historique')"><i class="ti ti-history"></i> Historique</button>
+  <button class="nav-tab" id="tab-equipe" onclick="showPage('equipe')"><i class="ti ti-users"></i> Équipe</button>
   <div class="nav-right">
     <span class="week-pill" id="week-pill">—</span>
     <span class="sync-badge sync-ing" id="sync-status"><i class="ti ti-loader spin"></i> Connexion…</span>
@@ -274,6 +309,16 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
+<div class="page" id="page-equipe">
+  <div class="equipe-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <span style="font-size:17px;font-weight:500">Gestion des congés</span>
+    </div>
+    <div id="equipe-calendar"></div>
+    <div id="equipe-form-area"></div>
+  </div>
+</div>
+
 <!-- SDK Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -294,6 +339,19 @@ const SREF = ref(db,"planning/state");
 const HREF = ref(db,"planning/history");
 const FWREF = (wkey) => ref(db,"planning/future/"+wkey);
 const NREF = ref(db,"planning/notes");
+const CREF = ref(db,"planning/conges");
+
+// Sync congés
+window.CONGES = {};
+onValue(CREF, snap=>{
+  const v=snap.val();
+  if(v) window.CONGES=v;
+  else window.CONGES={};
+});
+window.fbSaveConges = function(){
+  try{localStorage.setItem("planning_conges",JSON.stringify(window.CONGES));}catch(e){}
+  set(CREF, JSON.parse(JSON.stringify(window.CONGES))).catch(()=>{});
+};
 
 function syncBadge(s){
   const el=document.getElementById("sync-status");
@@ -771,11 +829,11 @@ function renderGrid(){
         <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4px">
           <div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="font-size:20px;font-weight:900;color:${headTxtColor};flex-shrink:0">${DLF[day]}</span>
+              <span style="font-size:16px;font-weight:500;color:${headTxtColor};flex-shrink:0">${DLF[day]}</span>
               ${isToday?`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.2);color:#fff;flex-shrink:0">Aujourd'hui</span>`:''}
               ${opPills}
             </div>
-            <div style="font-size:16px;font-weight:700;color:${headTxtColor};margin-top:2px;font-family:'DM Mono',monospace">${DAY_DATES[day]}</div>
+            <div style="font-size:13px;font-weight:700;color:${headTxtColor};margin-top:2px;font-family:'DM Mono',monospace">${DAY_DATES[day]}</div>
           </div>
           <span style="font-size:16px;font-weight:700;flex-shrink:0;color:${isToday?'#fff':pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}">${pct}%</span>
         </div>
@@ -879,7 +937,187 @@ function showPlanning(){
   renderPlanning();
 }
 
-/* ALERTES 15h */
+/* ---- CONGÉS / ÉQUIPE ---- */
+const OP_COLORS_DARK={chris:'#1D4ED8',camille:'#BE185D',thierry:'#065F46'};
+const OP_COLORS_LIGHT={chris:'#DBEAFE',camille:'#FCE7F3',thierry:'#D1FAE5'};
+const OP_INITIALS={chris:'C',camille:'Ca',thierry:'T'};
+
+function dateToTs(str){return new Date(str).getTime();}
+function tsToStr(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function isAbsent(op, dateStr){
+  if(!window.CONGES||!window.CONGES[op])return false;
+  const ts=dateToTs(dateStr);
+  return window.CONGES[op].some(c=>ts>=dateToTs(c.debut)&&ts<=dateToTs(c.fin));
+}
+function isAbsentThisWeek(op, weekMondayDate){
+  // Vérifie si absent au moins un jour de la semaine
+  for(let i=0;i<5;i++){
+    const d=new Date(weekMondayDate);d.setDate(d.getDate()+i);
+    if(isAbsent(op,tsToStr(d.getTime())))return true;
+  }
+  return false;
+}
+function getAbsentLabel(op, dateStr){
+  if(!window.CONGES||!window.CONGES[op])return null;
+  const ts=dateToTs(dateStr);
+  const c=window.CONGES[op].find(c=>ts>=dateToTs(c.debut)&&ts<=dateToTs(c.fin));
+  return c?c.label||"Congés":null;
+}
+
+function addConge(op){
+  const debut=document.getElementById("conge-debut-"+op).value;
+  const fin=document.getElementById("conge-fin-"+op).value;
+  const label=document.getElementById("conge-label-"+op).value.trim()||"Congés";
+  if(!debut||!fin){alert("Merci de saisir une date de début et de fin.");return;}
+  if(dateToTs(fin)<dateToTs(debut)){alert("La date de fin doit être après la date de début.");return;}
+  if(!window.CONGES)window.CONGES={};
+  if(!window.CONGES[op])window.CONGES[op]=[];
+  window.CONGES[op].push({id:"cg"+Date.now(),debut,fin,label});
+  window.fbSaveConges();
+  document.getElementById("conge-debut-"+op).value="";
+  document.getElementById("conge-fin-"+op).value="";
+  document.getElementById("conge-label-"+op).value="";
+  renderEquipe();
+}
+
+function delConge(op,id){
+  if(!window.CONGES||!window.CONGES[op])return;
+  window.CONGES[op]=window.CONGES[op].filter(c=>c.id!==id);
+  window.fbSaveConges();
+  renderEquipe();
+}
+
+function renderEquipe(){
+  // Calendrier 8 semaines
+  const now=new Date();
+  const dow=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-dow+(dow===0?-6:1));
+
+  const weeks=[];
+  for(let w=-1;w<=6;w++){
+    const wmo=new Date(monday);wmo.setDate(monday.getDate()+w*7);
+    const wfr=new Date(wmo);wfr.setDate(wmo.getDate()+4);
+    const wn=weekNum(wmo);
+    weeks.push({wmo,wfr,label:`S${wn}\n${wmo.getDate()}/${wmo.getMonth()+1}`});
+  }
+
+  function weekNum(d){const j=new Date(d.getFullYear(),0,1);return Math.ceil(((d-j)/86400000+j.getDay()+1)/7);}
+
+  let calHtml=`<div class="cal-grid">
+    <div class="cal-header">Personne</div>
+    ${weeks.map(w=>`<div class="cal-header" style="font-size:11px;line-height:1.3">${w.label.replace('\n','<br>')}</div>`).join("")}
+    ${OPERATEURS.map(op=>`
+      <div class="cal-person-label">
+        <div class="equipe-avatar av-${op}" style="width:24px;height:24px;font-size:11px">${OP_LABEL[op][0]}</div>
+        ${OP_LABEL[op]}
+      </div>
+      ${weeks.map(w=>{
+        const absent=isAbsentThisWeek(op,w.wmo);
+        if(absent){
+          // Trouver le label du congé
+          let lbl="🏖️";
+          for(let i=0;i<5;i++){const d=new Date(w.wmo);d.setDate(w.wmo.getDate()+i);const l=getAbsentLabel(op,tsToStr(d.getTime()));if(l){lbl=l;break;}}
+          return`<div class="cal-cell"><span class="cal-absent ${op}">${lbl}</span></div>`;
+        }
+        return`<div class="cal-cell"><span class="cal-dispo">✓</span></div>`;
+      }).join("")}
+    `).join("")}
+  </div>`;
+
+  document.getElementById("equipe-calendar").innerHTML=calHtml;
+
+  // Formulaires par personne
+  let formHtml=OPERATEURS.map(op=>{
+    const conges=(window.CONGES&&window.CONGES[op])||[];
+    const listHtml=conges.length
+      ? conges.map(c=>`<div class="conge-item">
+          <span class="conge-dates">${c.debut.split('-').reverse().join('/')} → ${c.fin.split('-').reverse().join('/')}</span>
+          <span class="conge-label">${c.label||'Congés'}</span>
+          <button class="conge-del" onclick="delConge('${op}','${c.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
+        </div>`).join("")
+      : `<div style="padding:8px 0;font-size:13px;color:var(--text3);font-style:italic">Aucun congé planifié</div>`;
+    return`<div class="equipe-person">
+      <div class="equipe-person-head">
+        <div class="equipe-avatar av-${op}">${OP_LABEL[op][0]}</div>
+        <span class="equipe-person-name">${OP_LABEL[op]}</span>
+      </div>
+      <div class="conge-list">${listHtml}</div>
+      <div class="conge-add-form">
+        <div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Début</div>
+          <input type="date" id="conge-debut-${op}">
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Fin</div>
+          <input type="date" id="conge-fin-${op}">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Motif (optionnel)</div>
+          <input type="text" id="conge-label-${op}" placeholder="Congés, Formation…">
+        </div>
+        <button class="conge-add-btn" onclick="addConge('${op}')"><i class="ti ti-plus" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Ajouter</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("equipe-form-area").innerHTML=formHtml;
+}
+
+/* ---- BADGE ABSENT dans opBar ---- */
+function absentBadge(op, day){
+  // Calcule la date du jour dans la semaine affichée
+  const now=new Date();
+  const base=new Date(now);base.setDate(now.getDate()+(weekOffset||0)*7);
+  const dow=base.getDay();
+  const monday=new Date(base);monday.setDate(base.getDate()-dow+(dow===0?-6:1));
+  const dayIdx=DAYS.indexOf(day);
+  const dayDate=new Date(monday);dayDate.setDate(monday.getDate()+dayIdx);
+  const dateStr=tsToStr(dayDate.getTime());
+  if(isAbsent(op,dateStr)){
+    const lbl=getAbsentLabel(op,dateStr)||"Congés";
+    return`<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;background:#FEF9C3;color:#713F12;border:1px solid #FDE047;flex-shrink:0">🏖️ ${lbl}</span>`;
+  }
+  return "";
+}
+
+/* ---- OVERRIDE opBar to include absent badge ---- */
+function opBar(day){
+  const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
+  const sel=Array.isArray(op)?op:(op?[op]:[]);
+  let label="Qui fait la météo ?";
+  if(sel.length===1)label="✦ "+OP_LABEL[sel[0]];
+  if(sel.length===2)label="✦ "+OP_LABEL[sel[0]]+" & "+OP_LABEL[sel[1]];
+  const cls=sel.length===1?sel[0]:"none";
+  const barStyle=sel.length===2
+    ?`background:linear-gradient(135deg,${sel[0]==='chris'?'#DBEAFE':sel[0]==='camille'?'#FCE7F3':'#D1FAE5'} 50%,${sel[1]==='chris'?'#DBEAFE':sel[1]==='camille'?'#FCE7F3':'#D1FAE5'} 50%);border-color:var(--border-md)`
+    :"";
+  const absentBadges=sel.map(o=>absentBadge(o,day)).join("");
+  return`<div class="op-bar ${cls}" style="${barStyle};flex-wrap:wrap;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
+      <span class="op-who ${sel.length===1?sel[0]:''}" style="${sel.length===2?'color:var(--text);font-weight:500':''}font-size:12px;flex-shrink:0">${label}</span>
+      ${absentBadges}
+    </div>
+    <div class="op-btns" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0">
+      ${OPERATEURS.map(o=>`<button class="op-btn ${o}${sel.includes(o)?" active":""}" style="flex-shrink:0;padding:4px 8px;font-size:11px" onclick="event.stopPropagation();setOp('${day}','${o}')">${OP_LABEL[o]}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+/* ---- Init congés locale ---- */
+try{const c=localStorage.getItem("planning_conges");if(c)window.CONGES=JSON.parse(c);}catch(e){}
+if(!window.CONGES)window.CONGES={};
+if(!window.fbSaveConges)window.fbSaveConges=function(){try{localStorage.setItem("planning_conges",JSON.stringify(window.CONGES));}catch(e){}};
+
+/* ---- Patch showPage for equipe ---- */
+const _showPageOrig=window.showPage||function(){};
+window.showPage=function(p){
+  document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(el=>el.classList.remove("active"));
+  document.getElementById("page-"+p).classList.add("active");
+  document.getElementById("tab-"+p).classList.add("active");
+  if(p==="historique")renderHistory();
+  if(p==="equipe")renderEquipe();
+};
 const JIDX={lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5};
 function nonCoches(day){
   if(!window.ST||!window.ST.tasks||!window.ST.tasks[day])return[];
