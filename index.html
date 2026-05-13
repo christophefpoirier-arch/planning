@@ -74,7 +74,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .si-chris{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
 .si-camille{background:linear-gradient(135deg,#BE185D,#EC4899)}
 .si-thierry{background:linear-gradient(135deg,#065F46,#10B981)}
-.sec-name{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.sec-name{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2)}
 .sub-label{font-size:12px;color:var(--text3);padding:4px 4px 2px;font-style:italic}
 /* OPERATEUR METEO */
 .op-bar{display:flex;align-items:center;flex-wrap:wrap;padding:6px 8px;border-radius:var(--rs);margin-bottom:6px;gap:6px;border:1px solid var(--border);background:var(--surface2);transition:background .25s,border-color .25s;min-width:0;overflow:hidden}
@@ -132,7 +132,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .free-zone-head{display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .free-zone-icon{width:20px;height:20px;border-radius:5px;background:#E11D48;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .free-zone-icon i{font-size:12px;color:#fff}
-.free-zone-title{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.free-zone-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2)}
 .free-task-row{display:flex;align-items:flex-start;gap:7px;padding:7px 6px;border-radius:var(--rs);cursor:pointer;margin-bottom:2px;transition:background .1s;user-select:none}
 .free-task-row:hover{background:var(--surface2)}
 .free-task-row.done{opacity:.45}
@@ -715,13 +715,23 @@ function renderGrid(){
   const OP_BG={chris:'#1D4ED8',camille:'#9D174D',thierry:'#065F46'};
   const OP_LIGHT={chris:'#DBEAFE',camille:'#FCE7F3',thierry:'#D1FAE5'};
   const OP_DARK_TXT={chris:'#1e3a8a',camille:'#831843',thierry:'#064e3b'};
+  // Calcul des dates de la semaine affichée
+  const baseDate=new Date();
+  baseDate.setDate(baseDate.getDate()+weekOffset*7);
+  const dow=baseDate.getDay();
+  const monday=new Date(baseDate);
+  monday.setDate(baseDate.getDate()-dow+(dow===0?-6:1));
+  const DAY_DATES={};
+  DAYS.forEach((d,i)=>{
+    const dt=new Date(monday);dt.setDate(monday.getDate()+i);
+    DAY_DATES[d]=dt.getDate()+"/"+(dt.getMonth()+1);
+  });
   document.getElementById("week-grid").innerHTML=days.map(day=>{
     const{t,d}=cntDay(day);
     const pct=t?Math.round(d/t*100):0;
-    const isToday=DAYS.indexOf(day)===TODAY;
+    const isToday=DAYS.indexOf(day)===TODAY&&weekOffset===0;
     const op=(window.ST.operateurs&&window.ST.operateurs[day])||null;
     const sel=Array.isArray(op)?op:(op?[op]:[]);
-    // En-tête : aujourd'hui = fond sombre, sinon couleur opérateur
     let headBg, headBorder, headTxtColor, progFillColor;
     if(isToday){
       headBg="#1a1a18"; headBorder="#1a1a18"; headTxtColor="#ffffff"; progFillColor="#ffffff";
@@ -733,10 +743,9 @@ function renderGrid(){
     } else {
       headBg="var(--surface2)"; headBorder="var(--border)"; headTxtColor="var(--text)"; progFillColor="var(--green)";
     }
-    // Pastilles noms opérateurs dans l'en-tête
     let opPills="";
     if(sel.length>0){
-      opPills=sel.map(o=>`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:${isToday?'rgba(255,255,255,0.2)':OP_BG[o]};color:${isToday?'#fff':'#fff'};white-space:nowrap;flex-shrink:0">${OP_LABEL[o]}</span>`).join("");
+      opPills=sel.map(o=>`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:${isToday?'rgba(255,255,255,0.2)':OP_BG[o]};color:#fff;white-space:nowrap;flex-shrink:0">${OP_LABEL[o]}</span>`).join("");
     }
     const secs=window.ST.tasks[day].map((sec,si)=>{
       const isMeteo=sec.sec==="meteo";
@@ -759,11 +768,16 @@ function renderGrid(){
     }).join("");
     return`<div class="day-col" style="${isToday?'box-shadow:0 0 0 2px #1a1a18':''}">
       <div class="day-head" style="background:${headBg};border-bottom:1.5px solid ${headBorder}">
-        <div class="day-name" style="color:${headTxtColor};display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
-          <span style="flex-shrink:0">${DLF[day]}</span>
-          ${isToday?`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.2);color:#fff;flex-shrink:0">Aujourd'hui</span>`:''}
-          ${opPills}
-          <span style="margin-left:auto;font-size:15px;font-weight:700;flex-shrink:0;color:${isToday?'#fff':pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}">${pct}%</span>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:16px;font-weight:500;color:${headTxtColor};flex-shrink:0">${DLF[day]}</span>
+              ${isToday?`<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.2);color:#fff;flex-shrink:0">Aujourd'hui</span>`:''}
+              ${opPills}
+            </div>
+            <div style="font-size:13px;font-weight:600;color:${isToday?'rgba(255,255,255,0.75)':'var(--text3)'};margin-top:2px;font-family:'DM Mono',monospace">${DAY_DATES[day]}</div>
+          </div>
+          <span style="font-size:16px;font-weight:700;flex-shrink:0;color:${isToday?'#fff':pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}">${pct}%</span>
         </div>
         <div class="day-prog" style="margin-top:6px">
           <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${progFillColor}"></div></div>
