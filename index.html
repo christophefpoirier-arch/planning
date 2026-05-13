@@ -232,18 +232,26 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .conge-add-form input[type=text]{flex:1;min-width:120px;font-size:13px;font-family:'DM Sans',sans-serif;border:0.5px solid var(--border-md);border-radius:var(--rs);padding:6px 10px;background:var(--surface2);color:var(--text);outline:none}
 .conge-add-form input[type=text]:focus{border-color:var(--green)}
 .conge-add-btn{font-size:13px;font-family:'DM Sans',sans-serif;padding:6px 14px;border-radius:var(--rs);border:0.5px solid var(--green);background:var(--green-l);color:var(--green-d);cursor:pointer;white-space:nowrap}
-/* Calendrier 8 semaines */
-.cal-grid{display:grid;grid-template-columns:110px repeat(8,1fr);gap:0;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
-.cal-header{background:var(--surface2);padding:8px 6px;font-size:12px;font-weight:500;color:var(--text3);text-align:center;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border)}
-.cal-header:last-child{border-right:none}
-.cal-person-label{background:var(--surface2);padding:10px 8px;font-size:13px;font-weight:600;color:var(--text);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap}
-.cal-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);font-size:11px;min-height:36px;display:flex;align-items:center;justify-content:center}
-.cal-cell:last-child{border-right:none}
-.cal-absent{border-radius:4px;font-size:11px;font-weight:600;padding:3px 6px;white-space:nowrap}
-.cal-absent.chris{background:#DBEAFE;color:#1D4ED8}
-.cal-absent.camille{background:#FCE7F3;color:#BE185D}
-.cal-absent.thierry{background:#D1FAE5;color:#065F46}
-.cal-dispo{color:var(--green);font-size:14px}
+/* Calendrier 8 semaines × 5 jours */
+.cal-scroll{overflow-x:auto;margin-bottom:20px}
+.cal-table{border-collapse:collapse;min-width:900px;width:100%}
+.cal-table th{background:var(--surface2);font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:6px 4px;text-align:center;border:0.5px solid var(--border)}
+.cal-table .week-head{background:#F0EDE6;font-size:11px;font-weight:700;color:var(--text2);text-align:center;padding:5px 4px;border:0.5px solid var(--border);white-space:nowrap}
+.cal-table td{border:0.5px solid var(--border);padding:0;vertical-align:middle;text-align:center;min-width:36px;height:32px}
+.cal-person-cell{background:var(--surface2);padding:6px 10px;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;text-align:left}
+.cal-person-cell .mini-av{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-right:5px;vertical-align:middle}
+.cal-day-cell{padding:2px;position:relative}
+.cal-day-cell.today{background:#FFF9E6}
+.cal-day-cell.absent-chris{background:#DBEAFE}
+.cal-day-cell.absent-camille{background:#FCE7F3}
+.cal-day-cell.absent-thierry{background:#D1FAE5}
+.cal-day-cell.absent-start-chris{border-left:3px solid #1D4ED8}
+.cal-day-cell.absent-start-camille{border-left:3px solid #BE185D}
+.cal-day-cell.absent-start-thierry{border-left:3px solid #065F46}
+.cal-day-num{font-size:11px;font-weight:600;color:var(--text2)}
+.cal-day-num.today-num{background:#1a1a18;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
+.cal-absent-dot{font-size:13px;line-height:1}
+.cal-dispo{color:#10B981;font-size:14px;font-weight:700}
 </style>
 </head>
 <body>
@@ -988,54 +996,85 @@ function delConge(op,id){
 }
 
 function renderEquipe(){
-  // Calendrier 8 semaines
   const now=new Date();
   const dow=now.getDay();
-  const monday=new Date(now);monday.setDate(now.getDate()-dow+(dow===0?-6:1));
+  const thisMonday=new Date(now);
+  thisMonday.setDate(now.getDate()-dow+(dow===0?-6:1));
+  thisMonday.setHours(0,0,0,0);
+  const todayStr=tsToStr(now.getTime());
 
   const weeks=[];
   for(let w=-1;w<=6;w++){
-    const wmo=new Date(monday);wmo.setDate(monday.getDate()+w*7);
-    const wfr=new Date(wmo);wfr.setDate(wmo.getDate()+4);
-    const wn=weekNum(wmo);
-    weeks.push({wmo,wfr,label:`S${wn}\n${wmo.getDate()}/${wmo.getMonth()+1}`});
+    const mo=new Date(thisMonday);mo.setDate(thisMonday.getDate()+w*7);
+    const days=[];
+    for(let d=0;d<5;d++){const dt=new Date(mo);dt.setDate(mo.getDate()+d);days.push(dt);}
+    const wnCalc=(()=>{const j=new Date(mo.getFullYear(),0,1);return Math.ceil(((mo-j)/86400000+j.getDay()+1)/7);})();
+    weeks.push({mo,days,wn:wnCalc});
   }
 
-  function weekNum(d){const j=new Date(d.getFullYear(),0,1);return Math.ceil(((d-j)/86400000+j.getDay()+1)/7);}
+  const JOURS=['L','M','M','J','V'];
+  const OP_BORDER={chris:'#1D4ED8',camille:'#BE185D',thierry:'#065F46'};
+  const OP_BG_C={chris:'#DBEAFE',camille:'#FCE7F3',thierry:'#D1FAE5'};
 
-  let calHtml=`<div class="cal-grid">
-    <div class="cal-header">Personne</div>
-    ${weeks.map(w=>`<div class="cal-header" style="font-size:11px;line-height:1.3">${w.label.replace('\n','<br>')}</div>`).join("")}
-    ${OPERATEURS.map(op=>`
-      <div class="cal-person-label">
-        <div class="equipe-avatar av-${op}" style="width:24px;height:24px;font-size:11px">${OP_LABEL[op][0]}</div>
-        ${OP_LABEL[op]}
-      </div>
-      ${weeks.map(w=>{
-        const absent=isAbsentThisWeek(op,w.wmo);
-        if(absent){
-          // Trouver le label du congé
-          let lbl="🏖️";
-          for(let i=0;i<5;i++){const d=new Date(w.wmo);d.setDate(w.wmo.getDate()+i);const l=getAbsentLabel(op,tsToStr(d.getTime()));if(l){lbl=l;break;}}
-          return`<div class="cal-cell"><span class="cal-absent ${op}">${lbl}</span></div>`;
+  let thead=`<thead>
+    <tr>
+      <th style="background:var(--surface2);border:0.5px solid var(--border);padding:6px 10px;text-align:left;font-size:12px;color:var(--text3)">Personne</th>
+      ${weeks.map(w=>`<th colspan="5" style="background:#F0EDE6;font-size:11px;font-weight:700;color:var(--text2);text-align:center;padding:5px 4px;border:0.5px solid var(--border);white-space:nowrap">S${w.wn} · ${w.days[0].getDate()}/${w.days[0].getMonth()+1}</th>`).join("")}
+    </tr>
+    <tr>
+      <th style="background:var(--surface2);border:0.5px solid var(--border)"></th>
+      ${weeks.map(w=>w.days.map((dt,di)=>{
+        const dstr=tsToStr(dt.getTime());
+        const isToday=dstr===todayStr;
+        return`<th style="background:${isToday?'#1a1a18':'var(--surface2)'};color:${isToday?'#fff':'var(--text3)'};border:0.5px solid var(--border);padding:4px 2px;font-size:11px;text-align:center;min-width:34px">
+          <div style="font-weight:600">${JOURS[di]}</div>
+          <div style="font-size:10px;opacity:.75">${dt.getDate()}</div>
+        </th>`;
+      }).join("")).join("")}
+    </tr>
+  </thead>`;
+
+  let tbody=`<tbody>${OPERATEURS.map(op=>`
+    <tr>
+      <td style="background:var(--surface2);padding:8px 10px;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;border:0.5px solid var(--border)">
+        <span style="width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-right:5px;vertical-align:middle" class="av-${op}">${OP_LABEL[op][0]}</span>${OP_LABEL[op]}
+      </td>
+      ${weeks.map(w=>w.days.map((dt,di)=>{
+        const dstr=tsToStr(dt.getTime());
+        const isToday=dstr===todayStr;
+        const absent=isAbsent(op,dstr);
+        const lbl=absent?getAbsentLabel(op,dstr):"";
+        const prevDt=new Date(dt);prevDt.setDate(dt.getDate()-1);
+        const isStart=absent&&(di===0||!isAbsent(op,tsToStr(prevDt.getTime())));
+        let cellBg=isToday?'#FFF9E6':'var(--surface)';
+        if(absent)cellBg=OP_BG_C[op];
+        const borderLeft=isStart?`border-left:3px solid ${OP_BORDER[op]}`:'';
+        let content='';
+        if(absent&&isStart&&lbl){
+          content=`<span style="font-size:9px;font-weight:600;color:${OP_BORDER[op]};white-space:nowrap;overflow:hidden;display:block;padding:0 2px;line-height:1.2">🏖️<br>${lbl}</span>`;
+        }else if(absent){
+          content=`<span style="display:block;height:4px;background:${OP_BORDER[op]};opacity:.4;border-radius:2px;margin:0 3px"></span>`;
+        }else{
+          content=`<span style="color:#10B981;font-size:13px;font-weight:700">✓</span>`;
         }
-        return`<div class="cal-cell"><span class="cal-dispo">✓</span></div>`;
-      }).join("")}
-    `).join("")}
-  </div>`;
+        return`<td style="background:${cellBg};${borderLeft};border:0.5px solid var(--border);text-align:center;vertical-align:middle;height:34px;padding:2px">${content}</td>`;
+      }).join("")).join("")}
+    </tr>`).join("")}</tbody>`;
 
-  document.getElementById("equipe-calendar").innerHTML=calHtml;
+  document.getElementById("equipe-calendar").innerHTML=`
+    <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px">Calendrier des présences — 8 semaines</div>
+    <div class="cal-scroll"><table class="cal-table" style="border-collapse:collapse;min-width:900px;width:100%">${thead}${tbody}</table></div>`;
 
-  // Formulaires par personne
-  let formHtml=OPERATEURS.map(op=>{
+  let formHtml=`<div style="font-size:15px;font-weight:600;color:var(--text);margin:20px 0 12px">Gérer les congés</div>`+
+  OPERATEURS.map(op=>{
     const conges=(window.CONGES&&window.CONGES[op])||[];
     const listHtml=conges.length
-      ? conges.map(c=>`<div class="conge-item">
+      ?conges.map(c=>`<div class="conge-item">
           <span class="conge-dates">${c.debut.split('-').reverse().join('/')} → ${c.fin.split('-').reverse().join('/')}</span>
           <span class="conge-label">${c.label||'Congés'}</span>
           <button class="conge-del" onclick="delConge('${op}','${c.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
         </div>`).join("")
-      : `<div style="padding:8px 0;font-size:13px;color:var(--text3);font-style:italic">Aucun congé planifié</div>`;
+      :`<div style="padding:8px 0;font-size:13px;color:var(--text3);font-style:italic">Aucun congé planifié</div>`;
     return`<div class="equipe-person">
       <div class="equipe-person-head">
         <div class="equipe-avatar av-${op}">${OP_LABEL[op][0]}</div>
@@ -1043,18 +1082,9 @@ function renderEquipe(){
       </div>
       <div class="conge-list">${listHtml}</div>
       <div class="conge-add-form">
-        <div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Début</div>
-          <input type="date" id="conge-debut-${op}">
-        </div>
-        <div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Fin</div>
-          <input type="date" id="conge-fin-${op}">
-        </div>
-        <div style="flex:1;min-width:120px">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:3px">Motif (optionnel)</div>
-          <input type="text" id="conge-label-${op}" placeholder="Congés, Formation…">
-        </div>
+        <div><div style="font-size:12px;color:var(--text3);margin-bottom:3px">Début</div><input type="date" id="conge-debut-${op}"></div>
+        <div><div style="font-size:12px;color:var(--text3);margin-bottom:3px">Fin</div><input type="date" id="conge-fin-${op}"></div>
+        <div style="flex:1;min-width:120px"><div style="font-size:12px;color:var(--text3);margin-bottom:3px">Motif (optionnel)</div><input type="text" id="conge-label-${op}" placeholder="Congés, Formation…"></div>
         <button class="conge-add-btn" onclick="addConge('${op}')"><i class="ti ti-plus" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Ajouter</button>
       </div>
     </div>`;
