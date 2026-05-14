@@ -210,7 +210,14 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .wnav-note::placeholder{color:var(--text3)}
 
 .spin{animation:spin 1s linear infinite;display:inline-block}
-/* ÉQUIPE / CONGÉS */
+/* Étiquettes destinataire et heure */
+.task-dest{font-size:11px;font-weight:600;color:var(--amber);flex-shrink:0;font-style:italic}
+.task-heure{font-size:11px;color:var(--text3);flex-shrink:0;font-family:'DM Mono',monospace;font-style:italic}
+/* Groupe hebdo encadré */
+.hebdo-group{border:1px solid var(--border);border-radius:var(--rs);margin:4px 0;overflow:hidden;background:var(--surface)}
+.hebdo-group .task-row{border-bottom:0.5px solid var(--border)}
+.hebdo-group .task-row:last-child{border-bottom:none}
+/* ÉQUIPE */
 .equipe-wrap{padding:20px}
 .equipe-person{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
 .equipe-person-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:0.5px solid var(--border)}
@@ -457,7 +464,7 @@ const DEF={
       {id:"l4",n:"Nord-Littoral",b:"a"},{id:"l5",n:"Quotidien de la Réunion",b:"a"},{id:"l6",n:"Corse Matin",b:"a"},
       {id:"l7",n:"Indépendant",b:"a"},{id:"l8",n:"Midi-Libre",b:"a"},{id:"l9",n:"La Provence",b:"a"},
     ]},
-    {sec:"couverture",tasks:[{id:"l10",n:"France Guyane",b:"a"}]},
+    {sec:"couverture",tasks:[{id:"l10",n:"France Guyane",b:"a",dest:"Romance"}]},
     {sec:"horoscope",tasks:[{id:"l11",n:"Aisne Nouvelle",b:"a"},{id:"l12",n:"Indépendant du Midi",b:"a"},{id:"l13",n:"France Antille",b:"a"}]},
   ],
   mardi:[
@@ -467,7 +474,7 @@ const DEF={
       {id:"ma7",n:"Indépendant",b:"a"},{id:"ma8",n:"Midi-Libre",b:"a"},{id:"ma9",n:"La Provence",b:"a"},
       {id:"ma10",n:"Journal d'Ici",b:"h"},{id:"ma11",n:"Impartial Drôme",b:"h"},{id:"ma12",n:"Bulletin Espalion",b:"h"},
       {id:"ma13",n:"Courrier Mayenne",b:"h"},{id:"ma14",n:"Haut d'Anjou",b:"h"},{id:"ma15",n:"Echo Ancenis",b:"h"},
-      {id:"ma16",n:"La Renaissance",b:"h"},{id:"ma17",n:"La Manche Libre",b:"h"},{id:"ma18",n:"L'Echo du Berry",b:"h"},
+      {id:"ma16",n:"La Renaissance",b:"h"},{id:"ma17",n:"La Manche Libre",b:"h",dest:"Romance"},{id:"ma18",n:"L'Echo du Berry",b:"h"},
     ]},
     {sec:"horoscope",tasks:[{id:"ma19",n:"Indépendant du Midi",b:"a"},{id:"ma20",n:"France Antille",b:"a"}]},
   ],
@@ -476,10 +483,10 @@ const DEF={
       {id:"me1",n:"Libération",b:"a"},{id:"me2",n:"Paris-Normandie",b:"a"},{id:"me3",n:"NRCO",b:"a"},
       {id:"me4",n:"Nord-Littoral",b:"a"},{id:"me5",n:"Quotidien de la Réunion",b:"a"},{id:"me6",n:"Corse Matin",b:"a"},
       {id:"me7",n:"Indépendant",b:"a"},{id:"me8",n:"Midi-Libre",b:"a"},{id:"me9",n:"La Provence",b:"a"},
-      {id:"me10",n:"Phare de Ré",b:"h"},{id:"me11",n:"Millau",b:"h"},{id:"me12",n:"Le Littoral",b:"h"},
-      {id:"me13",n:"Haute Saintonge",b:"h"},{id:"me14",n:"Le Courrier Cauchois",b:"h"},
+      {id:"me10",n:"Phare de Ré",b:"h",heure:"10h"},{id:"me11",n:"Millau",b:"h"},{id:"me12",n:"Le Littoral",b:"h",heure:"10h"},
+      {id:"me13",n:"Haute Saintonge",b:"h"},{id:"me14",n:"Le Courrier Cauchois",b:"h",heure:"12h"},
     ]},
-    {sec:"couverture",tasks:[{id:"me15",n:"Manche Libre",b:"a"}]},
+    {sec:"couverture",tasks:[{id:"me15",n:"Manche Libre",b:"a",dest:"Romance"}]},
     {sec:"horoscope",tasks:[{id:"me16",n:"Aisne Nouvelle",b:"a"},{id:"me17",n:"Indépendant du Midi",b:"a"},{id:"me18",n:"France Antille",b:"a"}]},
   ],
   jeudi:[
@@ -490,7 +497,7 @@ const DEF={
       {id:"j10",n:"Week'N",b:"h"},
     ]},
     {sec:"pasapas",tasks:[{id:"j11",n:"Illustration",b:"a"}]},
-    {sec:"couverture",tasks:[{id:"j12",n:"Liberté",b:"a"}]},
+    {sec:"couverture",tasks:[{id:"j12",n:"Liberté",b:"a",dest:"Rémi"}]},
     {sec:"horoscope",tasks:[{id:"j13",n:"Indépendant du Midi",b:"a"},{id:"j14",n:"France Antille",b:"a"}]},
   ],
   vendredi:[
@@ -755,10 +762,13 @@ function taskRow(t,day,si){
   }
   const dn=!!window.ST.done[t.id];
   const hideBadge=(window.ST.tasks[day][si].sec==="couverture"||window.ST.tasks[day][si].sec==="pasapas");
+  const destHtml=t.dest?`<span class="task-dest">${t.dest}</span>`:"";
+  const heureHtml=t.heure?`<span class="task-heure">${t.heure}</span>`:"";
+  const badgeHtml=hideBadge?"":`<span class="badge ${t.b==="h"?"b-h":"b-a"}">${t.b==="h"?"Hebdo":"Quotidien"}</span>`;
   return`<div class="task-row${dn?" done":""}" onclick="toggle('${t.id}')" tabindex="0">
     <div class="chk${dn?" on":""}"><i class="ti ti-check"></i></div>
     <div class="task-meta"><div class="task-lbl">${t.n}</div></div>
-    ${hideBadge?"":`<span class="badge ${t.b==="h"?"b-h":"b-a"}">${t.b==="h"?"Hebdo":"Quotidien"}</span>`}
+    ${heureHtml}${destHtml}${badgeHtml}
     <button class="del-btn" onclick="event.stopPropagation();delTask('${day}',${si},'${t.id}','${t.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
   </div>`;
 }
@@ -820,9 +830,16 @@ function renderGrid(){
       let rows="";
       if(hasQ&&hasH){
         rows+=`<div class="sub-label">Quotidien</div>`+sec.tasks.filter(tk=>tk.b==="a"||tk.m).map(tk=>taskRow(tk,day,si)).join("");
-        rows+=`<div class="sub-label">Hebdomadaire</div>`+sec.tasks.filter(tk=>tk.b==="h").map(tk=>taskRow(tk,day,si)).join("");
-      }else{rows=sec.tasks.map(tk=>taskRow(tk,day,si)).join("");}
-      return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span></div>
+        const hebdoTasks=sec.tasks.filter(tk=>tk.b==="h");
+        rows+=`<div class="sub-label">Hebdomadaire</div><div class="hebdo-group">${hebdoTasks.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+      }else if(hasH){
+        rows=`<div class="hebdo-group">${sec.tasks.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+      }else{
+        rows=sec.tasks.map(tk=>taskRow(tk,day,si)).join("");
+      }      // Étiquette destinataire au niveau section (pour couverture/pasapas avec 1 seule tâche)
+      const secDest = (sec.sec==="couverture"||sec.sec==="pasapas") && sec.tasks.length===1 && sec.tasks[0].dest
+        ? `<span class="task-dest" style="margin-left:6px;font-size:12px">${sec.tasks[0].dest}</span>` : "";
+      return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span>${secDest}</div>
       ${isMeteo?opBar(day):""}${rows}
       <div class="add-row">
         <input id="inp-${day}-${si}" placeholder="Ajouter…" onkeydown="if(event.key==='Enter')addTask('${day}',${si})">
