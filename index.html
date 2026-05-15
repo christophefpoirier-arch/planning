@@ -211,12 +211,17 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 
 .spin{animation:spin 1s linear infinite;display:inline-block}
 /* Étiquettes destinataire et heure */
-.task-dest{font-size:11px;font-weight:600;color:var(--amber);flex-shrink:0;font-style:italic}
-.task-heure{font-size:11px;color:var(--text3);flex-shrink:0;font-family:'DM Mono',monospace;font-style:italic}
-/* Groupe hebdo encadré */
+.task-dest{font-size:13px;font-weight:600;color:var(--amber);flex-shrink:0;font-style:italic;margin-left:4px}
+.task-heure{font-size:11px;color:var(--text3);flex-shrink:0;font-family:'DM Mono',monospace;font-style:italic;margin-left:3px}
+/* Groupe hebdo encadré standard */
 .hebdo-group{border:1px solid var(--border);border-radius:var(--rs);margin:4px 0;overflow:hidden;background:var(--surface)}
 .hebdo-group .task-row{border-bottom:0.5px solid var(--border)}
 .hebdo-group .task-row:last-child{border-bottom:none}
+/* Groupe envoi — fond pastel bleu très clair */
+.hebdo-group-envoi{border:1px solid #DBEAFE;border-radius:var(--rs);margin:4px 0;overflow:hidden;background:#F5F9FF}
+.hebdo-group-envoi .task-row{border-bottom:0.5px solid #E8F0FE;background:transparent}
+.hebdo-group-envoi .task-row:last-child{border-bottom:none}
+.hebdo-group-envoi .task-row:hover{background:#EBF3FF}
 /* ÉQUIPE */
 .equipe-wrap{padding:20px}
 .equipe-person{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
@@ -473,8 +478,9 @@ const DEF={
       {id:"ma4",n:"Nord-Littoral",b:"a"},{id:"ma5",n:"Quotidien de la Réunion",b:"a"},{id:"ma6",n:"Corse Matin",b:"a"},
       {id:"ma7",n:"Indépendant",b:"a"},{id:"ma8",n:"Midi-Libre",b:"a"},{id:"ma9",n:"La Provence",b:"a"},
       {id:"ma10",n:"Journal d'Ici",b:"h"},{id:"ma11",n:"Impartial Drôme",b:"h"},{id:"ma12",n:"Bulletin Espalion",b:"h"},
-      {id:"ma13",n:"Courrier Mayenne",b:"h"},{id:"ma14",n:"Haut d'Anjou",b:"h"},{id:"ma15",n:"Echo Ancenis",b:"h"},
-      {id:"ma16",n:"La Renaissance",b:"h"},{id:"ma17",n:"La Manche Libre",b:"h",dest:"Romance"},{id:"ma18",n:"L'Echo du Berry",b:"h"},
+      {id:"ma13",n:"Courrier Mayenne",b:"h",grp:"envoi"},{id:"ma14",n:"Haut d'Anjou",b:"h",grp:"envoi"},
+      {id:"ma15",n:"Echo Ancenis",b:"h",grp:"envoi"},{id:"ma16",n:"La Renaissance",b:"h",grp:"envoi"},
+      {id:"ma17",n:"La Manche Libre",b:"h",grp:"envoi"},{id:"ma18",n:"L'Echo du Berry",b:"h",grp:"envoi"},
     ]},
     {sec:"horoscope",tasks:[{id:"ma19",n:"Indépendant du Midi",b:"a"},{id:"ma20",n:"France Antille",b:"a"}]},
   ],
@@ -484,7 +490,7 @@ const DEF={
       {id:"me4",n:"Nord-Littoral",b:"a"},{id:"me5",n:"Quotidien de la Réunion",b:"a"},{id:"me6",n:"Corse Matin",b:"a"},
       {id:"me7",n:"Indépendant",b:"a"},{id:"me8",n:"Midi-Libre",b:"a"},{id:"me9",n:"La Provence",b:"a"},
       {id:"me10",n:"Phare de Ré",b:"h",heure:"10h"},{id:"me11",n:"Millau",b:"h"},{id:"me12",n:"Le Littoral",b:"h",heure:"10h"},
-      {id:"me13",n:"Haute Saintonge",b:"h"},{id:"me14",n:"Le Courrier Cauchois",b:"h",heure:"12h"},
+      {id:"me13",n:"Haute Saintonge",b:"h"},{id:"me14",n:"Le Courrier Cauchois",b:"h",heure:"12h",grp:"envoi"},
     ]},
     {sec:"couverture",tasks:[{id:"me15",n:"Manche Libre",b:"a",dest:"Romance"}]},
     {sec:"horoscope",tasks:[{id:"me16",n:"Aisne Nouvelle",b:"a"},{id:"me17",n:"Indépendant du Midi",b:"a"},{id:"me18",n:"France Antille",b:"a"}]},
@@ -496,7 +502,7 @@ const DEF={
       {id:"j7",n:"Indépendant",b:"a"},{id:"j8",n:"Midi-Libre",b:"a"},{id:"j9",n:"La Provence",b:"a"},
       {id:"j10",n:"Week'N",b:"h"},
     ]},
-    {sec:"pasapas",tasks:[{id:"j11",n:"Illustration",b:"a"}]},
+    {sec:"pasapas",tasks:[{id:"j11",n:"Illustration",b:"a",dest:"Charlotte"}]},
     {sec:"couverture",tasks:[{id:"j12",n:"Liberté",b:"a",dest:"Rémi"}]},
     {sec:"horoscope",tasks:[{id:"j13",n:"Indépendant du Midi",b:"a"},{id:"j14",n:"France Antille",b:"a"}]},
   ],
@@ -761,14 +767,17 @@ function taskRow(t,day,si){
     </div>`;
   }
   const dn=!!window.ST.done[t.id];
-  const hideBadge=(window.ST.tasks[day][si].sec==="couverture"||window.ST.tasks[day][si].sec==="pasapas");
-  const destHtml=t.dest?`<span class="task-dest">${t.dest}</span>`:"";
-  const heureHtml=t.heure?`<span class="task-heure">${t.heure}</span>`:"";
+  const secId=window.ST.tasks[day][si].sec;
+  const hideBadge=(secId==="couverture"||secId==="pasapas");
   const badgeHtml=hideBadge?"":`<span class="badge ${t.b==="h"?"b-h":"b-a"}">${t.b==="h"?"Hebdo":"Quotidien"}</span>`;
+  const heureHtml=t.heure?`<span class="task-heure">${t.heure}</span>`:"";
+  const destHtml=t.dest?`<span class="task-dest">${t.dest}</span>`:"";
   return`<div class="task-row${dn?" done":""}" onclick="toggle('${t.id}')" tabindex="0">
     <div class="chk${dn?" on":""}"><i class="ti ti-check"></i></div>
-    <div class="task-meta"><div class="task-lbl">${t.n}</div></div>
-    ${heureHtml}${destHtml}${badgeHtml}
+    <div class="task-meta" style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;flex-wrap:wrap">
+      <span class="task-lbl">${t.n}</span>${destHtml}
+    </div>
+    ${badgeHtml}${heureHtml}
     <button class="del-btn" onclick="event.stopPropagation();delTask('${day}',${si},'${t.id}','${t.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
   </div>`;
 }
@@ -830,17 +839,48 @@ function renderGrid(){
       let rows="";
       if(hasQ&&hasH){
         rows+=`<div class="sub-label">Quotidien</div>`+sec.tasks.filter(tk=>tk.b==="a"||tk.m).map(tk=>taskRow(tk,day,si)).join("");
-        const hebdoTasks=sec.tasks.filter(tk=>tk.b==="h");
-        rows+=`<div class="sub-label">Hebdomadaire</div><div class="hebdo-group">${hebdoTasks.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+        const hebdoNormal=sec.tasks.filter(tk=>tk.b==="h"&&!tk.grp);
+        const hebdoEnvoi=sec.tasks.filter(tk=>tk.b==="h"&&tk.grp==="envoi");
+        if(hebdoNormal.length||hebdoEnvoi.length) rows+=`<div class="sub-label">Hebdomadaire</div>`;
+        if(hebdoNormal.length) rows+=`<div class="hebdo-group">${hebdoNormal.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+        if(hebdoEnvoi.length) rows+=`<div class="hebdo-group-envoi">${hebdoEnvoi.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
       }else if(hasH){
-        rows=`<div class="hebdo-group">${sec.tasks.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+        const normal=sec.tasks.filter(tk=>!tk.grp);
+        const envoi=sec.tasks.filter(tk=>tk.grp==="envoi");
+        if(normal.length) rows+=`<div class="hebdo-group">${normal.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
+        if(envoi.length) rows+=`<div class="hebdo-group-envoi">${envoi.map(tk=>taskRow(tk,day,si)).join("")}</div>`;
       }else{
         rows=sec.tasks.map(tk=>taskRow(tk,day,si)).join("");
-      }      // Étiquette destinataire au niveau section (pour couverture/pasapas avec 1 seule tâche)
-      const secDest = (sec.sec==="couverture"||sec.sec==="pasapas") && sec.tasks.length===1 && sec.tasks[0].dest
-        ? `<span class="task-dest" style="margin-left:6px;font-size:12px">${sec.tasks[0].dest}</span>` : "";
-      return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span>${secDest}</div>
-      ${isMeteo?opBar(day):""}${rows}
+      }      // Pas d'étiquette au niveau du titre de section
+      const secHasHeure=sec.tasks.some(tk=>tk.heure);
+      return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span></div>
+      ${isMeteo?opBar(day):""}
+      ${sec.tasks.map(tk=>{
+        const dn2=!!window.ST.done[tk.id];
+        if(tk.m){
+          const all=[1,2,3].every(j=>window.ST.done[tk.id+"_j"+j]);
+          return`<div class="multi-row${all?" done":""}">
+            <span class="multi-lbl" style="${all?"text-decoration:line-through;color:var(--text3)":""}">${tk.n}</span>
+            <div class="multi-checks">${[1,2,3].map(j=>`<div class="jchk-wrap" onclick="toggleJ('${tk.id}',${j})">
+              <span class="jchk-lbl">J+${j}</span>
+              <div class="jchk${window.ST.done[tk.id+"_j"+j]?" on":""}"><i class="ti ti-check"></i></div>
+            </div>`).join("")}</div>
+            <button class="multi-del" onclick="event.stopPropagation();delTask('${day}',${si},'${tk.id}','${tk.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
+          </div>`;
+        }
+        const hideBadge2=(sec.sec==="couverture"||sec.sec==="pasapas");
+        const badge2=hideBadge2?"":`<span class="badge ${tk.b==="h"?"b-h":"b-a"}">${tk.b==="h"?"Hebdo":"Quotidien"}</span>`;
+        const dest2=tk.dest?`<span class="task-dest">${tk.dest}</span>`:"";
+        const heure2=tk.heure?`<span class="task-heure">${tk.heure}</span>`:"";
+        return`<div class="task-row${dn2?" done":""}" onclick="toggle('${tk.id}')" tabindex="0">
+          <div class="chk${dn2?" on":""}"><i class="ti ti-check"></i></div>
+          <div class="task-meta" style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;flex-wrap:wrap">
+            <span class="task-lbl">${tk.n}</span>${dest2}
+          </div>
+          ${badge2}${heure2}
+          <button class="del-btn" onclick="event.stopPropagation();delTask('${day}',${si},'${tk.id}','${tk.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
+        </div>`;
+      }).join("")}
       <div class="add-row">
         <input id="inp-${day}-${si}" placeholder="Ajouter…" onkeydown="if(event.key==='Enter')addTask('${day}',${si})">
         <select id="bsel-${day}-${si}"><option value="a">Quotidien</option><option value="h">Hebdo</option></select>
