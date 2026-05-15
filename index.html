@@ -770,15 +770,22 @@ function taskRow(t,day,si){
   const dn=!!window.ST.done[t.id];
   const secId=window.ST.tasks[day][si].sec;
   const hideBadge=(secId==="couverture"||secId==="pasapas");
-  const badgeHtml=hideBadge?"":`<span class="badge ${t.b==="h"?"b-h":"b-a"}">${t.b==="h"?"Hebdo":"Quotidien"}</span>`;
-  const heureHtml=t.heure?`<span class="task-heure">${t.heure}</span>`:"";
+  const badgeTxt=t.b==="h"?"Hebdo":"Quotidien";
+  const badgeCls=t.b==="h"?"b-h":"b-a";
   const destHtml=t.dest?`<span class="task-dest">${t.dest}</span>`:"";
+  // Colonne droite fixe : badge (ou espace) + heure (ou espace)
+  const rightHtml=hideBadge
+    ? (t.heure?`<span class="task-heure">${t.heure}</span>`:"")
+    : `<div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
+        ${t.heure?`<span class="task-heure">${t.heure}</span>`:`<span style="display:inline-block;min-width:28px"></span>`}
+      </div>`;
   return`<div class="task-row${dn?" done":""}" onclick="toggle('${t.id}')" tabindex="0">
     <div class="chk${dn?" on":""}"><i class="ti ti-check"></i></div>
-    <div class="task-meta" style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;flex-wrap:wrap">
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
       <span class="task-lbl">${t.n}</span>${destHtml}
     </div>
-    ${badgeHtml}${heureHtml}
+    ${rightHtml}
     <button class="del-btn" onclick="event.stopPropagation();delTask('${day}',${si},'${t.id}','${t.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
   </div>`;
 }
@@ -853,35 +860,9 @@ function renderGrid(){
       }else{
         rows=sec.tasks.map(tk=>taskRow(tk,day,si)).join("");
       }      // Pas d'étiquette au niveau du titre de section
-      const secHasHeure=sec.tasks.some(tk=>tk.heure);
       return`<div class="sec-header"><div class="sec-icon ${iconCls}"><i class="ti ${meta.icon}"></i></div><span class="sec-name">${meta.label}</span></div>
       ${isMeteo?opBar(day):""}
-      ${sec.tasks.map(tk=>{
-        const dn2=!!window.ST.done[tk.id];
-        if(tk.m){
-          const all=[1,2,3].every(j=>window.ST.done[tk.id+"_j"+j]);
-          return`<div class="multi-row${all?" done":""}">
-            <span class="multi-lbl" style="${all?"text-decoration:line-through;color:var(--text3)":""}">${tk.n}</span>
-            <div class="multi-checks">${[1,2,3].map(j=>`<div class="jchk-wrap" onclick="toggleJ('${tk.id}',${j})">
-              <span class="jchk-lbl">J+${j}</span>
-              <div class="jchk${window.ST.done[tk.id+"_j"+j]?" on":""}"><i class="ti ti-check"></i></div>
-            </div>`).join("")}</div>
-            <button class="multi-del" onclick="event.stopPropagation();delTask('${day}',${si},'${tk.id}','${tk.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
-          </div>`;
-        }
-        const hideBadge2=(sec.sec==="couverture"||sec.sec==="pasapas");
-        const badge2=hideBadge2?"":`<span class="badge ${tk.b==="h"?"b-h":"b-a"}">${tk.b==="h"?"Hebdo":"Quotidien"}</span>`;
-        const dest2=tk.dest?`<span class="task-dest">${tk.dest}</span>`:"";
-        const heure2=tk.heure?`<span class="task-heure">${tk.heure}</span>`:"";
-        return`<div class="task-row${dn2?" done":""}" onclick="toggle('${tk.id}')" tabindex="0">
-          <div class="chk${dn2?" on":""}"><i class="ti ti-check"></i></div>
-          <div class="task-meta" style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;flex-wrap:wrap">
-            <span class="task-lbl">${tk.n}</span>${dest2}
-          </div>
-          ${badge2}${heure2}
-          <button class="del-btn" onclick="event.stopPropagation();delTask('${day}',${si},'${tk.id}','${tk.n.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
-        </div>`;
-      }).join("")}
+      ${rows}
       <div class="add-row">
         <input id="inp-${day}-${si}" placeholder="Ajouter…" onkeydown="if(event.key==='Enter')addTask('${day}',${si})">
         <select id="bsel-${day}-${si}"><option value="a">Quotidien</option><option value="h">Hebdo</option></select>
